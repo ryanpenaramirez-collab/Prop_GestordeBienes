@@ -1,0 +1,6 @@
+{
+  "name": "Gestor de Bienes",
+  "description": "Aplicación de escritorio minimalista para partición legal de patrimonios, asignación de bienes y exportación a PDF en pesos colombianos (COP).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
