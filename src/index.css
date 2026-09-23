@@ -6,9 +6,7 @@
 }
 
 /* ==========================================================================
-   TEMA 1: BLANCO CORPORATIVO
-   Fondo predominantemente blanco en toda la aplicación (encabezado, contenedores,
-   tarjetas), con texto en negro y color de acento único para elementos activos.
+   TEMA 1: BLANCO CORPORATIVO (Limpieza y claridad institucional)
    ========================================================================== */
 [data-theme="blanco-corporativo"],
 body[data-theme="blanco-corporativo"] {
@@ -16,7 +14,6 @@ body[data-theme="blanco-corporativo"] {
   color: #0f172a !important;
 }
 
-/* Encabezado blanco corporativo de alto contraste */
 [data-theme="blanco-corporativo"] header.bg-slate-900 {
   background-color: #ffffff !important;
   color: #0f172a !important;
@@ -56,7 +53,6 @@ body[data-theme="blanco-corporativo"] {
   color: #000000 !important;
 }
 
-/* Botón activo en el encabezado blanco: acento negro corporativo nítido */
 [data-theme="blanco-corporativo"] header.bg-slate-900 button.bg-white.text-slate-950 {
   background-color: #0f172a !important;
   color: #ffffff !important;
@@ -67,7 +63,6 @@ body[data-theme="blanco-corporativo"] {
   background-color: #cbd5e1 !important;
 }
 
-/* Contenedores y áreas desplazables con fondo blanco predominante */
 [data-theme="blanco-corporativo"] #app-root-container,
 [data-theme="blanco-corporativo"] .bg-slate-100 {
   background-color: #ffffff !important;
@@ -104,23 +99,19 @@ body[data-theme="blanco-corporativo"] {
 
 
 /* ==========================================================================
-   TEMA 2: GRIS TÉCNICO (GRIS NEUTRO)
-   Fondo predominantemente en tonos grises medios (no blanco ni negro),
-   tarjetas en un gris ligeramente más claro u oscuro para diferenciarse,
-   texto en negro o gris muy oscuro, y color de acento único para activos.
+   TEMA 2: GRIS TÉCNICO (Neutral equilibrado, menos saturado para largas sesiones)
    ========================================================================== */
 [data-theme="gris-tecnico"],
 body[data-theme="gris-tecnico"] {
-  background-color: #94a3b8 !important; /* Gris medio neutro predominante */
-  color: #09090b !important;
+  background-color: #8795a8 !important; /* Gris neutro optimizado y más suave */
+  color: #0f172a !important;
 }
 
-/* Encabezado técnico en gris pizarra medio-oscuro */
 [data-theme="gris-tecnico"] header.bg-slate-900 {
-  background-color: #334155 !important;
+  background-color: #2b3748 !important;
   color: #ffffff !important;
   border-bottom: 1px solid #1e293b !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1) !important;
 }
 
 [data-theme="gris-tecnico"] header.bg-slate-900 h1,
@@ -132,15 +123,15 @@ body[data-theme="gris-tecnico"] {
 [data-theme="gris-tecnico"] header.bg-slate-900 button.bg-slate-800\/80,
 [data-theme="gris-tecnico"] header.bg-slate-900 button.bg-slate-800,
 [data-theme="gris-tecnico"] header.bg-slate-900 button#hdr-btn-perfil-usuario {
-  background-color: #475569 !important;
+  background-color: #3b4859 !important;
   color: #f1f5f9 !important;
-  border-color: #64748b !important;
+  border-color: #526075 !important;
 }
 
 [data-theme="gris-tecnico"] header.bg-slate-900 button.bg-slate-800\/80:hover,
 [data-theme="gris-tecnico"] header.bg-slate-900 button.bg-slate-800:hover,
 [data-theme="gris-tecnico"] header.bg-slate-900 button#hdr-btn-perfil-usuario:hover {
-  background-color: #64748b !important;
+  background-color: #526075 !important;
   color: #ffffff !important;
 }
 
@@ -150,17 +141,15 @@ body[data-theme="gris-tecnico"] {
   border-color: #0f172a !important;
 }
 
-/* Fondo de todos los contenedores y áreas de trabajo en Gris Medio Neutro */
 [data-theme="gris-tecnico"] #app-root-container,
 [data-theme="gris-tecnico"] .bg-slate-100,
 [data-theme="gris-tecnico"] div.flex-1.overflow-y-auto,
 [data-theme="gris-tecnico"] div.flex-1.bg-white,
 [data-theme="gris-tecnico"] .bg-slate-100\/80,
 [data-theme="gris-tecnico"] main.flex-1 {
-  background-color: #94a3b8 !important; /* Tono medio de escala de grises */
+  background-color: #8795a8 !important;
 }
 
-/* Barras superiores secundarias y sub-pestañas */
 [data-theme="gris-tecnico"] div.border-b.bg-white,
 [data-theme="gris-tecnico"] .bg-slate-50\/70,
 [data-theme="gris-tecnico"] .bg-slate-50 {
@@ -169,42 +158,37 @@ body[data-theme="gris-tecnico"] {
   color: #0f172a !important;
 }
 
-/* Tarjetas en gris claro técnico: diferenciadas claramente del fondo gris medio */
 [data-theme="gris-tecnico"] .rounded-xl.bg-white,
 [data-theme="gris-tecnico"] .rounded-lg.bg-white,
 [data-theme="gris-tecnico"] .p-5.bg-white,
 [data-theme="gris-tecnico"] .p-4.bg-white,
 [data-theme="gris-tecnico"] .p-6.bg-white {
-  background-color: #e2e8f0 !important;
+  background-color: #f1f5f9 !important; /* Tarjetas más limpias y suaves */
   border-color: #64748b !important;
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.1) !important;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.08) !important;
 }
 
-/* Cajas internas de segundo nivel */
 [data-theme="gris-tecnico"] .bg-slate-50.border,
 [data-theme="gris-tecnico"] .bg-slate-100.border {
-  background-color: #f1f5f9 !important;
-  border-color: #94a3b8 !important;
+  background-color: #e2e8f0 !important;
+  border-color: #8795a8 !important;
 }
 
-/* Barras inferiores fijas */
 [data-theme="gris-tecnico"] .border-t.bg-slate-50,
 [data-theme="gris-tecnico"] .border-t.bg-white {
   background-color: #cbd5e1 !important;
   border-color: #64748b !important;
 }
 
-/* Bordes en general */
 [data-theme="gris-tecnico"] .border-slate-200,
 [data-theme="gris-tecnico"] .border-slate-300 {
   border-color: #64748b !important;
 }
 
-/* Tipografía de alta legibilidad en negro y gris muy oscuro */
 [data-theme="gris-tecnico"] .text-slate-900,
 [data-theme="gris-tecnico"] .text-slate-800,
 [data-theme="gris-tecnico"] .text-slate-700 {
-  color: #09090b !important;
+  color: #0f172a !important;
 }
 
 [data-theme="gris-tecnico"] .text-slate-600,
@@ -216,38 +200,34 @@ body[data-theme="gris-tecnico"] {
   color: #475569 !important;
 }
 
-/* Tablas en gris técnico */
 [data-theme="gris-tecnico"] thead th {
   background-color: #cbd5e1 !important;
-  color: #09090b !important;
+  color: #0f172a !important;
   border-color: #64748b !important;
 }
 
 [data-theme="gris-tecnico"] tbody tr {
-  border-color: #94a3b8 !important;
+  border-color: #8795a8 !important;
 }
 
-/* Entradas de formulario e inputs */
 [data-theme="gris-tecnico"] input:not([type="checkbox"]):not([type="radio"]),
 [data-theme="gris-tecnico"] select,
 [data-theme="gris-tecnico"] textarea {
-  background-color: #f8fafc !important;
-  color: #09090b !important;
-  border-color: #475569 !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #526075 !important;
 }
 
-/* Botones secundarios */
 [data-theme="gris-tecnico"] button.bg-white {
   background-color: #e2e8f0 !important;
   border-color: #64748b !important;
-  color: #09090b !important;
+  color: #0f172a !important;
 }
 
 [data-theme="gris-tecnico"] button.bg-white:hover {
   background-color: #cbd5e1 !important;
 }
 
-/* Botones y elementos activos (color de acento único) */
 [data-theme="gris-tecnico"] .bg-slate-900 {
   background-color: #0f172a !important;
   color: #ffffff !important;
@@ -255,20 +235,16 @@ body[data-theme="gris-tecnico"] {
 
 
 /* ==========================================================================
-   TEMA 3: NEGRO EJECUTIVO / NEGRO CARBÓN
-   Fondo predominantemente negro o gris muy oscuro en toda la aplicación,
-   con texto en blanco o gris claro, y el mismo color de acento único para
-   botones y elementos activos.
+   TEMA 3: NEGRO EJECUTIVO (Negro carbón refinado, elegante y de bajo impacto visual)
    ========================================================================== */
 [data-theme="negro-ejecutivo"],
 body[data-theme="negro-ejecutivo"] {
-  background-color: #09090b !important; /* Negro carbón profundo */
+  background-color: #121215 !important; /* Gris muy oscuro / negro carbón suave (menos pesado que el negro puro) */
   color: #f4f4f5 !important;
 }
 
-/* Encabezado negro puro */
 [data-theme="negro-ejecutivo"] header.bg-slate-900 {
-  background-color: #000000 !important;
+  background-color: #18181c !important;
   color: #ffffff !important;
   border-bottom: 1px solid #27272a !important;
 }
@@ -282,15 +258,15 @@ body[data-theme="negro-ejecutivo"] {
 [data-theme="negro-ejecutivo"] header.bg-slate-900 button.bg-slate-800\/80,
 [data-theme="negro-ejecutivo"] header.bg-slate-900 button.bg-slate-800,
 [data-theme="negro-ejecutivo"] header.bg-slate-900 button#hdr-btn-perfil-usuario {
-  background-color: #18181b !important;
+  background-color: #222228 !important;
   color: #e4e4e7 !important;
-  border-color: #27272a !important;
+  border-color: #32323a !important;
 }
 
 [data-theme="negro-ejecutivo"] header.bg-slate-900 button.bg-slate-800\/80:hover,
 [data-theme="negro-ejecutivo"] header.bg-slate-900 button.bg-slate-800:hover,
 [data-theme="negro-ejecutivo"] header.bg-slate-900 button#hdr-btn-perfil-usuario:hover {
-  background-color: #27272a !important;
+  background-color: #32323a !important;
   color: #ffffff !important;
 }
 
@@ -300,7 +276,6 @@ body[data-theme="negro-ejecutivo"] {
   border-color: #ffffff !important;
 }
 
-/* Fondo principal de la app, vistas y contenedores desplazables */
 [data-theme="negro-ejecutivo"] #app-root-container,
 [data-theme="negro-ejecutivo"] .bg-slate-100,
 [data-theme="negro-ejecutivo"] .bg-slate-50,
@@ -311,23 +286,21 @@ body[data-theme="negro-ejecutivo"] {
 [data-theme="negro-ejecutivo"] div.flex-1.overflow-y-auto,
 [data-theme="negro-ejecutivo"] div.flex-1.bg-white,
 [data-theme="negro-ejecutivo"] main.flex-1 {
-  background-color: #09090b !important;
+  background-color: #121215 !important;
 }
 
-/* Barras secundarias, toolbars y subencabezados */
 [data-theme="negro-ejecutivo"] div.border-b.bg-white,
 [data-theme="negro-ejecutivo"] header.bg-white,
 [data-theme="negro-ejecutivo"] div.bg-slate-50\/70,
 [data-theme="negro-ejecutivo"] div.bg-slate-50 {
-  background-color: #121215 !important;
-  border-color: #27272a !important;
+  background-color: #18181c !important;
+  border-color: #2a2a30 !important;
   color: #f4f4f5 !important;
 }
 
-/* Tarjetas y contenedores de primer nivel */
 [data-theme="negro-ejecutivo"] .bg-white {
-  background-color: #16161a !important;
-  border-color: #27272a !important;
+  background-color: #1b1b20 !important; /* Tarjetas en gris oscuro elegante */
+  border-color: #2a2a30 !important;
   color: #f4f4f5 !important;
 }
 
@@ -336,38 +309,34 @@ body[data-theme="negro-ejecutivo"] {
 [data-theme="negro-ejecutivo"] .p-5.bg-white,
 [data-theme="negro-ejecutivo"] .p-4.bg-white,
 [data-theme="negro-ejecutivo"] .p-6.bg-white {
-  background-color: #16161a !important;
-  border-color: #2e2e34 !important;
+  background-color: #1b1b20 !important;
+  border-color: #2e2e36 !important;
   color: #f4f4f5 !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.6) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4) !important;
 }
 
-/* Cajas internas de segundo nivel y paneles anidados */
 [data-theme="negro-ejecutivo"] .bg-slate-50,
 [data-theme="negro-ejecutivo"] .bg-slate-100,
 [data-theme="negro-ejecutivo"] .bg-slate-50\/50,
 [data-theme="negro-ejecutivo"] .bg-slate-50\/60,
 [data-theme="negro-ejecutivo"] .bg-slate-50\/70 {
-  background-color: #1c1c22 !important;
-  border-color: #2e2e36 !important;
+  background-color: #222228 !important;
+  border-color: #32323c !important;
   color: #f4f4f5 !important;
 }
 
-/* Barras inferiores fijas */
 [data-theme="negro-ejecutivo"] .border-t.bg-slate-50,
 [data-theme="negro-ejecutivo"] .border-t.bg-white {
-  background-color: #121215 !important;
-  border-color: #27272a !important;
+  background-color: #18181c !important;
+  border-color: #2a2a30 !important;
 }
 
-/* Bordes generales definidos y sutiles entre niveles */
 [data-theme="negro-ejecutivo"] .border-slate-200,
 [data-theme="negro-ejecutivo"] .border-slate-300,
 [data-theme="negro-ejecutivo"] .border-slate-100 {
-  border-color: #27272a !important;
+  border-color: #2a2a30 !important;
 }
 
-/* Textos en blanco o gris muy claro (mínimo nivel AA de accesibilidad) */
 [data-theme="negro-ejecutivo"] .text-slate-900,
 [data-theme="negro-ejecutivo"] .text-slate-800 {
   color: #ffffff !important;
@@ -386,23 +355,21 @@ body[data-theme="negro-ejecutivo"] {
   color: #a1a1aa !important;
 }
 
-/* Enlaces clicables en modo oscuro */
 [data-theme="negro-ejecutivo"] a.text-blue-600,
 [data-theme="negro-ejecutivo"] a.text-indigo-600,
 [data-theme="negro-ejecutivo"] a.text-slate-900 {
   color: #93c5fd !important;
 }
 
-/* Tablas completas, encabezados, filas, celdas y muestras dinámicas */
 [data-theme="negro-ejecutivo"] table {
-  background-color: #16161a !important;
+  background-color: #1b1b20 !important;
   color: #f4f4f5 !important;
 }
 
 [data-theme="negro-ejecutivo"] thead,
 [data-theme="negro-ejecutivo"] thead th,
 [data-theme="negro-ejecutivo"] thead.bg-slate-100 th {
-  background-color: #22222a !important;
+  background-color: #24242c !important;
   color: #ffffff !important;
   border-color: #33333d !important;
 }
@@ -410,25 +377,24 @@ body[data-theme="negro-ejecutivo"] {
 [data-theme="negro-ejecutivo"] tbody,
 [data-theme="negro-ejecutivo"] tbody tr,
 [data-theme="negro-ejecutivo"] tbody td {
-  background-color: #16161a !important;
+  background-color: #1b1b20 !important;
   color: #f4f4f5 !important;
   border-color: #27272f !important;
 }
 
 [data-theme="negro-ejecutivo"] tbody tr:hover,
 [data-theme="negro-ejecutivo"] tbody tr:hover td {
-  background-color: #1e1e26 !important;
+  background-color: #23232a !important;
 }
 
 [data-theme="negro-ejecutivo"] .divide-y > * {
   border-color: #27272f !important;
 }
 
-/* Entradas de formulario e inputs */
 [data-theme="negro-ejecutivo"] input:not([type="checkbox"]):not([type="radio"]),
 [data-theme="negro-ejecutivo"] select,
 [data-theme="negro-ejecutivo"] textarea {
-  background-color: #141418 !important;
+  background-color: #16161a !important;
   color: #ffffff !important;
   border-color: #3f3f46 !important;
 }
@@ -445,7 +411,6 @@ body[data-theme="negro-ejecutivo"] {
   color: #71717a !important;
 }
 
-/* Badges, chips y tags */
 [data-theme="negro-ejecutivo"] .bg-slate-100:not(input) {
   background-color: #27272e !important;
   color: #ffffff !important;
@@ -464,21 +429,19 @@ body[data-theme="negro-ejecutivo"] {
   border-color: #78350f !important;
 }
 
-/* Botones secundarios */
 [data-theme="negro-ejecutivo"] button.bg-white,
 [data-theme="negro-ejecutivo"] button.border-slate-300 {
-  background-color: #202026 !important;
+  background-color: #25252c !important;
   border-color: #3f3f46 !important;
   color: #ffffff !important;
 }
 
 [data-theme="negro-ejecutivo"] button.bg-white:hover,
 [data-theme="negro-ejecutivo"] button.border-slate-300:hover {
-  background-color: #2b2b34 !important;
+  background-color: #303038 !important;
   color: #ffffff !important;
 }
 
-/* Botones y elementos activos (color de acento único blanco puro en tema negro) */
 [data-theme="negro-ejecutivo"] .bg-slate-900:not(header) {
   background-color: #ffffff !important;
   color: #000000 !important;
@@ -488,7 +451,6 @@ body[data-theme="negro-ejecutivo"] {
   color: #000000 !important;
 }
 
-/* Tarjetas de opciones seleccionadas (como tema o densidad con ring) */
 [data-theme="negro-ejecutivo"] .ring-slate-900\/10,
 [data-theme="negro-ejecutivo"] .border-slate-900 {
   border-color: #ffffff !important;
@@ -499,15 +461,15 @@ body[data-theme="negro-ejecutivo"] {
   border-color: #ffffff !important;
 }
 
-/* Tarjeta del botón "+ Nueva Partición de Bienes" */
 [data-theme="negro-ejecutivo"] .border-dashed {
   border-color: #3f3f46 !important;
-  background-color: #16161a !important;
+  background-color: #1b1b20 !important;
 }
 
 [data-theme="negro-ejecutivo"] .border-dashed:hover {
   border-color: #ffffff !important;
 }
+
 
 /* ==========================================================================
    DENSIDAD Y ESPACIADO DE TABLAS Y CONTROLES
@@ -542,4 +504,3 @@ body[data-theme="negro-ejecutivo"] {
   padding-right: 1.25rem !important;
   font-size: 0.875rem !important;
 }
-
