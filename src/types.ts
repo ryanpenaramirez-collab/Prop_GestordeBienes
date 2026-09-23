@@ -229,8 +229,8 @@ export interface ResultadoParticion {
   montoTotalSinAsignarCOP: number;
   repartoEsValido: boolean;
   porcentajeCostosProceso: number; // Grupo 1: % deducido sobre el patrimonio bruto (sin tope de 100%)
-  porcentajeTotalLeyesReparto: number; // Grupo 2: % sobre el patrimonio neto resultante
-  repartoEsValido100: boolean; // true si repartoEsValido es true (compatibilidad)
+  porcentajeTotalLeyesReparto: number; // Grupo 2: % sobre el patrimonio neto resultante (restringido estrictamente al 100%)
+  repartoEsValido100: boolean; // true si la suma total del reparto no excede matemáticamente el 100% del neto partible
   regimenDetectado: 'testado' | 'intestado' | 'disolucion_societaria' | 'copropiedad' | 'personalizado';
   porcentajeTotalLeyes: number; // Compatibilidad con vistas previas
   montoAsignadoPorLeyesCOP: number;
