@@ -7,7 +7,6 @@ import {
   AjustesApp,
 } from './types';
 import {
-  obtenerProcesosPendientes,
   guardarProceso,
   eliminarProceso,
   finalizarProcesoEnStorage,
@@ -19,9 +18,9 @@ import {
   guardarPerfilAbogado,
   obtenerAjustesApp,
   guardarAjustesApp,
-  obtenerEstadoSesion,
   guardarEstadoSesion,
 } from './utils/storage';
+import { supabase } from './lib/supabase';
 import { HomeScreen } from './components/HomeScreen';
 import { WizardProceso } from './components/WizardProceso';
 import { ConfigLeyes } from './components/ConfigLeyes';
@@ -29,7 +28,6 @@ import { ConfigHonorarios } from './components/ConfigHonorarios';
 import { ConfiguracionGeneral } from './components/ConfiguracionGeneral';
 import { LoginScreen } from './components/LoginScreen';
 import { HeaderPrincipal } from './components/HeaderPrincipal';
-import { Scale } from 'lucide-react';
 
 export default function App() {
   const [vista, setVista] = useState<'home' | 'wizard' | 'config-leyes' | 'config-honorarios' | 'config-general'>('home');
@@ -55,19 +53,58 @@ export default function App() {
     setVista(nuevaVista);
   };
 
+  // Función para cargar los procesos reales desde Supabase
+  const cargarProcesosSupabase = async () => {
+    try {
+      const { data, error } = await supabase.from('procesos').select('*');
+      
+      if (error) {
+        console.error('Error al cargar procesos de Supabase:', error.message);
+        return;
+      }
+
+      if (data) {
+        const procesosMapeados: ProcesoParticion[] = data.map((item: any) => ({
+          id: item.id ? String(item.id) : `proc-${Date.now()}`,
+          nombreCaso: item.nombre_caso || 'Expediente sin nombre',
+          tipoProceso: item.tipo_caso || 'Partición Notarial / Judicial',
+          fechaCreacion: item.created_at || new Date().toISOString(),
+          fechaUltimaEdicion: new Date().toISOString(),
+          finalizado: item.estado === 'finalizado',
+          pasoActual: 1,
+          regimenSucesoral: 'testado',
+          bienes: [],
+          leyes: obtenerLeyesGenerales().map((l) => ({ ...l })),
+          personas: [],
+          honorarios: {
+            ...obtenerHonorariosGenerales(),
+            porcentajeHonorarios: item.honorarios_porcentaje ?? obtenerHonorariosGenerales().porcentajeHonorarios,
+          },
+        }));
+        setProcesos(procesosMapeados);
+      }
+    } catch (err) {
+      console.error('Excepción al conectar con Supabase:', err);
+    }
+  };
+
   // Cargar datos locales al montar: siempre forzar inicio en LoginScreen
   useEffect(() => {
-    // Al abrir la aplicación o acceder desde cualquier enlace, limpiar cualquier sesión previa activa
     guardarEstadoSesion(false);
     setSesionActiva(false);
 
-    const listProcesos = obtenerProcesosPendientes();
-    setProcesos(listProcesos);
     setLeyesGenerales(obtenerLeyesGenerales());
     setHonorariosGenerales(obtenerHonorariosGenerales());
     setPerfilAbogado(obtenerPerfilAbogado());
     setAjustesApp(obtenerAjustesApp());
   }, []);
+
+  // Cargar procesos de Supabase al activar la sesión
+  useEffect(() => {
+    if (sesionActiva) {
+      cargarProcesosSupabase();
+    }
+  }, [sesionActiva]);
 
   const mostrarMensajeNotificacion = (texto: string) => {
     setNotificacion(texto);
@@ -127,8 +164,7 @@ export default function App() {
     if (!procesoActivo) return;
 
     finalizarProcesoEnStorage(procesoActivo.id);
-    const restantes = obtenerProcesosPendientes();
-    setProcesos(restantes);
+    cargarProcesosSupabase();
     setProcesoActivo(null);
     setVista('home');
     mostrarMensajeNotificacion('Proceso finalizado.');
@@ -190,7 +226,7 @@ export default function App() {
             proceso={procesoActivo}
             onActualizarProceso={handleActualizarProceso}
             onSalirAlInicio={() => {
-              setProcesos(obtenerProcesosPendientes());
+              cargarProcesosSupabase();
               navegarA('home');
             }}
             onFinalizarProceso={handleFinalizarProceso}
