@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   ArrowLeft,
   Settings,
@@ -18,12 +18,17 @@ import {
   ExternalLink,
   Link as LinkIcon,
   AlertCircle,
+  AlertTriangle,
   Camera,
   Upload,
+  Download,
+  Database,
+  KeyRound,
   Trash2,
   Image as ImageIcon,
 } from 'lucide-react';
 import { PerfilAbogado, AjustesApp } from '../types';
+import { aplicarRespaldo, crearCredencialesPIN, crearRespaldo, hayCredencialesPIN } from '../utils/storage';
 
 // Valida si un texto cumple el formato de una URL válida (o si está vacío/opcional)
 export function esUrlValida(url?: string): boolean {
@@ -96,12 +101,79 @@ export const ConfiguracionGeneral: React.FC<ConfiguracionGeneralProps> = ({
   // Feedback de guardado
   const [guardadoFeedback, setGuardadoFeedback] = useState<boolean>(false);
 
+  const [pinNuevo, setPinNuevo] = useState<string>('');
+  const [pinConfirmacion, setPinConfirmacion] = useState<string>('');
+  const [codigoRecuperacionGenerado, setCodigoRecuperacionGenerado] = useState<string | null>(null);
+  const [errorSeguridad, setErrorSeguridad] = useState<string | null>(null);
+  const [credencialesConfiguradas, setCredencialesConfiguradas] = useState<boolean>(hayCredencialesPIN);
+  const [errorRespaldo, setErrorRespaldo] = useState<string | null>(null);
+  const [respaldoFeedback, setRespaldoFeedback] = useState<string | null>(null);
+  const inputRespaldoRef = useRef<HTMLInputElement | null>(null);
+
   const hayCambiosPerfil = JSON.stringify(perfil) !== JSON.stringify(perfilGuardado);
   const hayCambiosAjustes = JSON.stringify(ajustes) !== JSON.stringify(ajustesGuardados);
   const hayCambiosPendientes = hayCambiosPerfil || hayCambiosAjustes;
 
   const handleCerrarSesion = () => {
     onCambiarEstadoSesion(false);
+  };
+
+  const handleCrearPin = async () => {
+    if (!/^\d{6}$/.test(pinNuevo)) {
+      setErrorSeguridad('El PIN debe tener exactamente 6 dígitos.');
+      return;
+    }
+    if (pinNuevo !== pinConfirmacion) {
+      setErrorSeguridad('La confirmación del PIN no coincide.');
+      return;
+    }
+    try {
+      const codigo = await crearCredencialesPIN(pinNuevo);
+      setCredencialesConfiguradas(true);
+      setCodigoRecuperacionGenerado(codigo);
+      setPinNuevo('');
+      setPinConfirmacion('');
+      setErrorSeguridad(null);
+    } catch (e) {
+      setErrorSeguridad(e instanceof Error ? e.message : 'No fue posible crear el PIN.');
+    }
+  };
+
+  const handleExportarRespaldo = () => {
+    try {
+      const contenido = crearRespaldo();
+      const blob = new Blob([contenido], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const enlace = document.createElement('a');
+      enlace.href = url;
+      enlace.download = `respaldo_gestor_bienes_${new Date().toISOString().slice(0, 10)}.json`;
+      enlace.click();
+      URL.revokeObjectURL(url);
+      setErrorRespaldo(null);
+      setRespaldoFeedback('Respaldo exportado. Guárdelo en un lugar seguro.');
+    } catch (e) {
+      setRespaldoFeedback(null);
+      setErrorRespaldo(e instanceof Error ? e.message : 'No fue posible exportar el respaldo.');
+    }
+  };
+
+  const handleImportarRespaldo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const archivo = e.target.files?.[0];
+    e.target.value = '';
+    if (!archivo) return;
+    const confirmado = window.confirm(
+      'Importar el respaldo reemplazará los datos guardados actualmente en este equipo. ¿Desea continuar?'
+    );
+    if (!confirmado) return;
+    try {
+      const contenido = await archivo.text();
+      aplicarRespaldo(contenido);
+      setErrorRespaldo(null);
+      window.location.reload();
+    } catch (err) {
+      setRespaldoFeedback(null);
+      setErrorRespaldo(err instanceof Error ? err.message : 'El archivo seleccionado no es un respaldo válido.');
+    }
   };
 
   // Selector de tema: solo actualiza la selección local dentro de la tarjeta, sin alterar el tema real de la pantalla
@@ -277,6 +349,159 @@ export const ConfiguracionGeneral: React.FC<ConfiguracionGeneralProps> = ({
                   <LogOut className="w-3.5 h-3.5 text-slate-700" />
                   <span>Cerrar Sesión</span>
                 </button>
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-2xs space-y-4">
+                <div className="border-b border-slate-200 pb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                      <KeyRound className="w-4 h-4 text-slate-900" />
+                      Seguridad de Acceso
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Cree o cambie su PIN y obtenga un código de recuperación para desbloquear el acceso.
+                    </p>
+                  </div>
+                  <BadgeTag>{credencialesConfiguradas ? 'PIN configurado' : 'PIN inicial'}</BadgeTag>
+                </div>
+
+                {codigoRecuperacionGenerado && (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 space-y-2">
+                    <div className="flex items-center gap-2 text-amber-900">
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      <span className="text-xs font-bold">Guarde este código de recuperación ahora</span>
+                    </div>
+                    <p className="text-[11px] text-amber-900 leading-relaxed">
+                      Este código se muestra una sola vez. Cópielo y guárdelo fuera de esta aplicación; no podrá volver a verlo.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <code
+                        id="codigo-recuperacion-generado"
+                        className="px-3 py-2 rounded border border-amber-300 bg-white text-sm font-mono font-bold text-slate-900 tracking-widest select-all"
+                      >
+                        {codigoRecuperacionGenerado}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={() => setCodigoRecuperacionGenerado(null)}
+                        className="text-xs font-semibold text-slate-700 hover:text-slate-950 px-3 py-2 rounded-lg hover:bg-white transition-colors cursor-pointer"
+                      >
+                        Ya guardé el código
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label htmlFor="seguridad-pin-nuevo" className="font-bold text-slate-700 flex items-center gap-1.5 text-xs">
+                      <Shield className="w-3.5 h-3.5 text-slate-700" />
+                      <span>Nuevo PIN (6 dígitos)</span>
+                    </label>
+                    <input
+                      id="seguridad-pin-nuevo"
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={pinNuevo}
+                      onChange={(e) => setPinNuevo(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="••••••"
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium text-slate-900 font-mono tracking-widest focus:outline-none focus:border-slate-900"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="seguridad-pin-confirmacion" className="font-bold text-slate-700 flex items-center gap-1.5 text-xs">
+                      <Shield className="w-3.5 h-3.5 text-slate-700" />
+                      <span>Confirmar PIN</span>
+                    </label>
+                    <input
+                      id="seguridad-pin-confirmacion"
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={pinConfirmacion}
+                      onChange={(e) => setPinConfirmacion(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="••••••"
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium text-slate-900 font-mono tracking-widest focus:outline-none focus:border-slate-900"
+                      autoComplete="off"
+                    />
+                  </div>
+                </div>
+
+                {errorSeguridad && (
+                  <div className="flex items-center gap-1.5 text-red-700 text-xs">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{errorSeguridad}</span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  id="btn-crear-pin-seguridad"
+                  onClick={handleCrearPin}
+                  className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-2xs cursor-pointer"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>{credencialesConfiguradas ? 'Cambiar PIN y generar nuevo código' : 'Crear PIN y generar código de recuperación'}</span>
+                </button>
+
+                <p className="text-[11px] text-slate-500 leading-relaxed max-w-3xl">
+                  Después de 5 intentos fallidos el acceso se bloquea temporalmente por 15 minutos. Puede recuperarlo antes con el código de recuperación.
+                </p>
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-2xs space-y-4">
+                <div className="border-b border-slate-200 pb-3">
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <Database className="w-4 h-4 text-slate-900" />
+                    Respaldo de Datos
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Sus datos se guardan en este equipo y navegador; no se envían ni se sincronizan automáticamente. Haga respaldos periódicos.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    type="button"
+                    id="btn-exportar-respaldo"
+                    onClick={handleExportarRespaldo}
+                    className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-2xs cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Exportar respaldo</span>
+                  </button>
+                  <button
+                    type="button"
+                    id="btn-importar-respaldo"
+                    onClick={() => inputRespaldoRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-950 text-xs font-semibold px-4 py-2 rounded-lg transition-colors border border-slate-300 shadow-2xs cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-slate-700" />
+                    <span>Importar respaldo</span>
+                  </button>
+                  <input
+                    ref={inputRespaldoRef}
+                    type="file"
+                    accept="application/json,.json"
+                    className="hidden"
+                    onChange={handleImportarRespaldo}
+                  />
+                </div>
+
+                {respaldoFeedback && (
+                  <div className="flex items-center gap-1.5 text-emerald-700 text-xs">
+                    <Check className="w-3.5 h-3.5 shrink-0" />
+                    <span>{respaldoFeedback}</span>
+                  </div>
+                )}
+                {errorRespaldo && (
+                  <div className="flex items-center gap-1.5 text-red-700 text-xs">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{errorRespaldo}</span>
+                  </div>
+                )}
               </div>
 
               {/* Apartado: Foto de Perfil */}
@@ -971,7 +1196,7 @@ export const ConfiguracionGeneral: React.FC<ConfiguracionGeneralProps> = ({
                     <div className="flex flex-col gap-0.5">
                       <span className="font-bold text-slate-900">Autoguardado Local Continuo</span>
                       <span className="text-[11px] text-slate-500">
-                        Guarda inmediatamente cada cambio en el almacenamiento local seguro del navegador.
+                        Guarda cada cambio en este equipo y navegador. No hay sincronización automática; haga respaldos periódicos.
                       </span>
                     </div>
                     <input

@@ -59,9 +59,16 @@ body[data-theme="blanco-corporativo"] {
   border-color: #1e293b !important;
 }
 
-[data-theme="blanco-corporativo"] #app-root-container,
-[data-theme="blanco-corporativo"] .bg-slate-100 {
+[data-theme="blanco-corporativo"] #app-root-container {
   background-color: #fcfcfd !important;
+}
+
+[data-theme="blanco-corporativo"] .bg-slate-100 {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme="blanco-corporativo"] .text-slate-400 {
+  color: #64748b !important;
 }
 
 [data-theme="blanco-corporativo"] .bg-white {
@@ -138,12 +145,15 @@ body[data-theme="gris-tecnico"] {
 }
 
 [data-theme="gris-tecnico"] #app-root-container,
-[data-theme="gris-tecnico"] .bg-slate-100,
 [data-theme="gris-tecnico"] div.flex-1.overflow-y-auto,
 [data-theme="gris-tecnico"] div.flex-1.bg-white,
 [data-theme="gris-tecnico"] .bg-slate-100\/80,
 [data-theme="gris-tecnico"] main.flex-1 {
   background-color: #eef2f6 !important;
+}
+
+[data-theme="gris-tecnico"] .bg-slate-100 {
+  background-color: #e2e8f0 !important;
 }
 
 [data-theme="gris-tecnico"] div.border-b.bg-white,

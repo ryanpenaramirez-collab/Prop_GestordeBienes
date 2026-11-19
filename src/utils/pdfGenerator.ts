@@ -564,6 +564,13 @@ export function generarPDFParticion(
       pageHeight - 16,
       { align: 'center' }
     );
+    doc.setFontSize(6.5);
+    doc.text(
+      'Herramienta de apoyo; no reemplaza la revisión de un abogado.',
+      pageWidth / 2,
+      pageHeight - 27,
+      { align: 'center' }
+    );
   }
 
   const cleanName = casoNombre.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 30);

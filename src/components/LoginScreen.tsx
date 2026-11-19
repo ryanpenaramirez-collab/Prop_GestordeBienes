@@ -1,23 +1,51 @@
-import React, { useState } from 'react';
-import { Lock, Mail, Eye, EyeOff, Sparkles, Info, Shield } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Lock, Mail, Eye, EyeOff, Sparkles, Info, Shield, KeyRound } from 'lucide-react';
 import { PerfilAbogado } from '../types';
+import {
+  hayCredencialesPIN,
+  obtenerEstadoBloqueoPIN,
+  registrarIntentoFallidoPIN,
+  reiniciarIntentosPIN,
+  verificarCodigoRecuperacion,
+  verificarPin,
+} from '../utils/storage';
 
 interface LoginScreenProps {
   perfil: PerfilAbogado;
-  onIniciarSesion: () => void;
+  onIniciarSesion: (recordarSesion: boolean) => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
   perfil,
   onIniciarSesion,
 }) => {
-  const [emailLogin, setEmailLogin] = useState<string>(
-    perfil.correo || 'alejandro.restrepo@gestordebienes.legal'
-  );
+  const [emailLogin, setEmailLogin] = useState<string>('');
   const [pinLogin, setPinLogin] = useState<string>('');
   const [mostrarPin, setMostrarPin] = useState<boolean>(false);
-  const [recordarSesion, setRecordarSesion] = useState<boolean>(true);
+  const [recordarSesion, setRecordarSesion] = useState<boolean>(false);
   const [errorLogin, setErrorLogin] = useState<string | null>(null);
+  const [modoRecuperacion, setModoRecuperacion] = useState<boolean>(false);
+  const [codigoRecuperacion, setCodigoRecuperacion] = useState<string>('');
+  const [estadoBloqueo, setEstadoBloqueo] = useState(obtenerEstadoBloqueoPIN);
+  const [credencialesConfiguradas] = useState(hayCredencialesPIN);
+
+  const estaBloqueado = estadoBloqueo.bloqueadoHasta !== null;
+
+  useEffect(() => {
+    if (!estaBloqueado) {
+      return;
+    }
+    const temporizador = window.setInterval(() => {
+      setEstadoBloqueo(obtenerEstadoBloqueoPIN());
+    }, 1000);
+    return () => window.clearInterval(temporizador);
+  }, [estaBloqueado]);
+
+  const formatearTiempoRestante = (hasta: number) => {
+    const segundos = Math.max(0, Math.ceil((hasta - Date.now()) / 1000));
+    const minutos = Math.floor(segundos / 60);
+    return `${minutos} min ${String(segundos % 60).padStart(2, '0')} s`;
+  };
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawVal = e.target.value;
@@ -55,25 +83,74 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     }
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const completarIngreso = () => {
+    reiniciarIntentosPIN();
+    setEstadoBloqueo({ intentosFallidos: 0, bloqueadoHasta: null });
+    setErrorLogin(null);
+    onIniciarSesion(recordarSesion);
+  };
+
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!emailLogin.trim()) {
-      setErrorLogin('Por favor ingrese su correo electrónico profesional o nombre de usuario.');
+    if (estaBloqueado && estadoBloqueo.bloqueadoHasta !== null) {
+      setErrorLogin(
+        `Acceso bloqueado temporalmente. Intente nuevamente en ${formatearTiempoRestante(
+          estadoBloqueo.bloqueadoHasta
+        )} o use su código de recuperación.`
+      );
       return;
     }
+
+    if (modoRecuperacion) {
+      if (!codigoRecuperacion.trim()) {
+        setErrorLogin('Por favor ingrese su código de recuperación.');
+        return;
+      }
+      const codigoValido = await verificarCodigoRecuperacion(codigoRecuperacion);
+      if (!codigoValido) {
+        setErrorLogin('El código de recuperación no es válido.');
+        return;
+      }
+      completarIngreso();
+      return;
+    }
+
     if (!pinLogin) {
       setErrorLogin('Por favor ingrese el PIN de seguridad.');
       return;
     }
-    setErrorLogin(null);
-    onIniciarSesion();
+
+    const pinValido = await verificarPin(pinLogin);
+    if (!pinValido) {
+      const nuevoEstado = registrarIntentoFallidoPIN();
+      setEstadoBloqueo(nuevoEstado);
+      setPinLogin('');
+      if (nuevoEstado.bloqueadoHasta !== null) {
+        setErrorLogin(
+          `Ha superado 5 intentos fallidos. Acceso bloqueado por 15 minutos. Recupere el acceso con su código de recuperación.`
+        );
+      } else {
+        setErrorLogin(
+          `PIN incorrecto. Intentos restantes: ${5 - nuevoEstado.intentosFallidos}.`
+        );
+      }
+      return;
+    }
+
+    completarIngreso();
   };
 
-  const handleAccesoRapido = () => {
-    setEmailLogin(perfil.correo || 'alejandro.restrepo@gestordebienes.legal');
-    setPinLogin('123456');
-    setErrorLogin(null);
-    onIniciarSesion();
+  const handleAccesoRapido = async () => {
+    if (estaBloqueado) {
+      setErrorLogin('El acceso rápido está deshabilitado mientras la sesión esté bloqueada.');
+      return;
+    }
+    const pinValido = await verificarPin('123456');
+    if (!pinValido) {
+      setErrorLogin('El acceso rápido ya no está disponible. Ingrese su PIN de seguridad.');
+      return;
+    }
+    completarIngreso();
   };
 
   return (
@@ -111,6 +188,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             </p>
           </div>
 
+          {estaBloqueado && (
+            <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-900 flex items-start gap-2">
+              <KeyRound className="w-4 h-4 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-bold">Acceso bloqueado temporalmente</p>
+                {estadoBloqueo.bloqueadoHasta !== null && (
+                  <p className="mt-0.5">
+                    Tiempo restante: {formatearTiempoRestante(estadoBloqueo.bloqueadoHasta)}.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           {errorLogin && (
             <div className="p-3 bg-slate-50 border border-slate-400 rounded-lg text-xs text-slate-900 flex items-start gap-2">
               <Info className="w-4 h-4 text-slate-900 shrink-0 mt-0.5" />
@@ -134,54 +225,95 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 onChange={(e) => setEmailLogin(e.target.value)}
                 placeholder="abogado@despacho.legal"
                 className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-slate-900 shadow-2xs"
-                required
               />
             </div>
 
-            {/* PIN de Seguridad (6 dígitos) */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="login-standalone-pin"
-                className="text-xs font-bold text-slate-700 flex items-center gap-1.5"
-              >
-                <Lock className="w-3.5 h-3.5 text-slate-700" />
-                <span>PIN de Seguridad (6 dígitos)</span>
-              </label>
-              <div className="relative">
+            {modoRecuperacion ? (
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="login-standalone-recuperacion"
+                  className="text-xs font-bold text-slate-700 flex items-center gap-1.5"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-slate-700" />
+                  <span>Código de Recuperación</span>
+                </label>
                 <input
-                  id="login-standalone-pin"
-                  type={mostrarPin ? 'text' : 'password'}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
-                  value={pinLogin}
-                  onChange={handlePinChange}
-                  onKeyDown={handlePinKeyDown}
-                  placeholder="••••••"
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3.5 pr-20 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-slate-900 shadow-2xs tracking-widest"
+                  id="login-standalone-recuperacion"
+                  type="text"
+                  value={codigoRecuperacion}
+                  onChange={(e) => {
+                    setCodigoRecuperacion(e.target.value);
+                    if (errorLogin) setErrorLogin(null);
+                  }}
+                  placeholder="GB-XXXX-XXXX-XXXX"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-slate-900 shadow-2xs tracking-widest"
                   autoComplete="off"
                   required
                 />
+                <p className="text-[11px] text-slate-500">
+                  Use el código que se mostró una sola vez cuando se creó el PIN.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="login-standalone-pin"
+                  className="text-xs font-bold text-slate-700 flex items-center gap-1.5"
+                >
+                  <Lock className="w-3.5 h-3.5 text-slate-700" />
+                  <span>PIN de Seguridad (6 dígitos)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    id="login-standalone-pin"
+                    type={mostrarPin ? 'text' : 'password'}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    value={pinLogin}
+                    onChange={handlePinChange}
+                    onKeyDown={handlePinKeyDown}
+                    placeholder="••••••"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3.5 pr-20 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-slate-900 shadow-2xs tracking-widest"
+                    autoComplete="off"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarPin(!mostrarPin)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-900 cursor-pointer transition-colors select-none"
+                    title={mostrarPin ? 'Ocultar PIN' : 'Mostrar PIN'}
+                  >
+                    {mostrarPin ? (
+                      <>
+                        <EyeOff className="w-3.5 h-3.5" />
+                        <span>Ocultar</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Mostrar</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {credencialesConfiguradas && (
+              <div className="text-right">
                 <button
                   type="button"
-                  onClick={() => setMostrarPin(!mostrarPin)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-900 cursor-pointer transition-colors select-none"
-                  title={mostrarPin ? 'Ocultar PIN' : 'Mostrar PIN'}
+                  onClick={() => {
+                    setModoRecuperacion(!modoRecuperacion);
+                    setErrorLogin(null);
+                  }}
+                  className="text-[11px] font-semibold text-slate-700 hover:text-slate-950 underline cursor-pointer"
                 >
-                  {mostrarPin ? (
-                    <>
-                      <EyeOff className="w-3.5 h-3.5" />
-                      <span>Ocultar</span>
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Mostrar</span>
-                    </>
-                  )}
+                  {modoRecuperacion ? 'Volver al ingreso con PIN' : '¿Olvidó su PIN? Use su código de recuperación'}
                 </button>
               </div>
-            </div>
+            )}
 
             <div className="flex items-center justify-between text-xs text-slate-600 pt-0.5">
               <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -202,30 +334,35 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 className="w-full bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white font-bold py-2.5 px-4 rounded-lg text-xs transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-2"
               >
                 <Lock className="w-3.5 h-3.5" />
-                <span>Iniciar Sesión</span>
+                <span>{modoRecuperacion ? 'Recuperar Acceso' : 'Iniciar Sesión'}</span>
               </button>
 
-              <button
-                type="button"
-                id="btn-acceso-rapido"
-                onClick={handleAccesoRapido}
-                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold py-2 px-4 rounded-lg text-xs transition-colors border border-slate-300 cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-slate-700" />
-                <span>Acceso Rápido como {perfil.nombre || 'Abogado Titular'}</span>
-              </button>
+              {!credencialesConfiguradas && (
+                <button
+                  type="button"
+                  id="btn-acceso-rapido"
+                  onClick={handleAccesoRapido}
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold py-2 px-4 rounded-lg text-xs transition-colors border border-slate-300 cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-slate-700" />
+                  <span>Acceso Rápido como {perfil.nombre || 'Abogado Titular'}</span>
+                </button>
+              )}
             </div>
           </form>
 
           <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500 text-center leading-relaxed">
-            Almacenamiento local seguro en el navegador. La información del abogado se incorpora automáticamente en la carátula y el pie de firma de los reportes PDF.
+            Sus datos se guardan únicamente en este equipo y navegador; no se sincronizan automáticamente. Haga respaldos periódicos desde Configuración General.
           </div>
         </div>
 
         {/* Footer institucional discreto */}
-        <div className="text-center text-[11px] text-slate-500 flex items-center justify-center gap-2">
-          <Shield className="w-3.5 h-3.5 text-slate-400" />
-          <span>Acceso restringido a profesionales del derecho • C.C. y C.G.P.</span>
+        <div className="text-center text-[11px] text-slate-500 flex flex-col items-center justify-center gap-1">
+          <div className="flex items-center justify-center gap-2">
+            <Shield className="w-3.5 h-3.5 text-slate-400" />
+            <span>Acceso restringido a profesionales del derecho • C.C. y C.G.P.</span>
+          </div>
+          <span>Herramienta de apoyo; no reemplaza la revisión de un abogado.</span>
         </div>
       </div>
     </div>

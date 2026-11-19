@@ -29,6 +29,19 @@ export interface AjustesApp {
   autoGuardadoLocal: boolean;
 }
 
+export interface CredencialesPIN {
+  pinHash: string;
+  pinSalt: string;
+  codigoRecuperacionHash: string;
+  codigoRecuperacionSalt: string;
+  fechaCreacion: string;
+}
+
+export interface EstadoBloqueoPIN {
+  intentosFallidos: number;
+  bloqueadoHasta: number | null;
+}
+
 export interface Persona {
   id: string;
   nombre: string;

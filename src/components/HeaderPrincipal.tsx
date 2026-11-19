@@ -16,9 +16,9 @@ export const HeaderPrincipal: React.FC<HeaderPrincipalProps> = ({
   notificacion,
 }) => {
   return (
-    <header className="bg-slate-900 text-white px-6 py-2.5 flex items-center justify-between border-b border-slate-800 shrink-0 z-20 shadow-xs select-none">
+    <header className="bg-slate-900 text-white px-6 py-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-slate-800 shrink-0 z-20 shadow-xs select-none">
       {/* 1. Nombre de la aplicación */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         <button
           type="button"
           id="hdr-btn-logo-inicio"
@@ -36,7 +36,7 @@ export const HeaderPrincipal: React.FC<HeaderPrincipalProps> = ({
       </div>
 
       {/* 2. Navegación Principal Única y Perfil Profesional */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap justify-end shrink-0">
         {/* Botón 1: Leyes */}
         <button
           type="button"

@@ -18,6 +18,7 @@ import {
   guardarPerfilAbogado,
   obtenerAjustesApp,
   guardarAjustesApp,
+  obtenerEstadoSesion,
   guardarEstadoSesion,
 } from './utils/storage';
 import { supabase } from './lib/supabase';
@@ -37,8 +38,7 @@ export default function App() {
   const [honorariosGenerales, setHonorariosGenerales] = useState<HonorariosConfig>(obtenerHonorariosGenerales());
   const [perfilAbogado, setPerfilAbogado] = useState<PerfilAbogado>(obtenerPerfilAbogado());
   const [ajustesApp, setAjustesApp] = useState<AjustesApp>(obtenerAjustesApp());
-  // Siempre iniciar con sesión inactiva (false) al cargar la aplicación desde cualquier enlace o ruta
-  const [sesionActiva, setSesionActiva] = useState<boolean>(false);
+  const [sesionActiva, setSesionActiva] = useState<boolean>(() => obtenerEstadoSesion());
   const [notificacion, setNotificacion] = useState<string | null>(null);
 
   // Sincronizar tema visual y densidad activa confirmada con el documento raíz y body
@@ -88,11 +88,8 @@ export default function App() {
     }
   };
 
-  // Cargar datos locales al montar: siempre forzar inicio en LoginScreen
+  // Cargar datos locales al montar
   useEffect(() => {
-    guardarEstadoSesion(false);
-    setSesionActiva(false);
-
     setLeyesGenerales(obtenerLeyesGenerales());
     setHonorariosGenerales(obtenerHonorariosGenerales());
     setPerfilAbogado(obtenerPerfilAbogado());
@@ -185,12 +182,12 @@ export default function App() {
   // Si no hay sesión activa, mostrar únicamente la pantalla de login independiente
   if (!sesionActiva) {
     return (
-      <div id="app-root-container" data-theme={ajustesApp.temaVisual} data-density={ajustesApp.densidadInterfaz} className="h-screen w-screen flex flex-col font-sans overflow-hidden select-none">
+      <div id="app-root-container" data-theme={ajustesApp.temaVisual} data-density={ajustesApp.densidadInterfaz} className="h-screen w-full flex flex-col font-sans overflow-hidden select-none">
         <LoginScreen
           perfil={perfilAbogado}
-          onIniciarSesion={() => {
+          onIniciarSesion={(recordarSesion) => {
             setSesionActiva(true);
-            guardarEstadoSesion(true);
+            guardarEstadoSesion(recordarSesion);
             setVista('home');
             mostrarMensajeNotificacion('Sesión profesional iniciada.');
           }}
@@ -200,7 +197,7 @@ export default function App() {
   }
 
   return (
-    <div id="app-root-container" data-theme={ajustesApp.temaVisual} data-density={ajustesApp.densidadInterfaz} className="h-screen w-screen flex flex-col bg-slate-100 text-slate-800 font-sans overflow-hidden select-none">
+    <div id="app-root-container" data-theme={ajustesApp.temaVisual} data-density={ajustesApp.densidadInterfaz} className="h-screen w-full flex flex-col bg-slate-100 text-slate-800 font-sans overflow-hidden select-none">
       {/* Componente único de Encabezado Principal compartido en toda la aplicación */}
       <HeaderPrincipal
         vistaActual={vista}
@@ -278,6 +275,10 @@ export default function App() {
           />
         )}
       </main>
+
+      <div className="shrink-0 border-t border-slate-200 bg-white px-6 py-1 text-center text-[10px] font-medium text-slate-600">
+        Herramienta de apoyo; no reemplaza la revisión de un abogado. Los datos se guardan en este equipo; haga respaldos periódicos.
+      </div>
     </div>
   );
 }

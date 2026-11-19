@@ -1,4 +1,4 @@
-import { Ley, HonorariosConfig, ProcesoParticion, PerfilAbogado, AjustesApp, CasoFinalizado, ResultadoParticion } from '../types';
+import { Ley, HonorariosConfig, ProcesoParticion, PerfilAbogado, AjustesApp, CasoFinalizado, ResultadoParticion, CredencialesPIN, EstadoBloqueoPIN } from '../types';
 import { calcularParticion } from './calculator';
 
 export const LEYES_PREDETERMINADAS: Ley[] = [
@@ -678,5 +678,205 @@ export function guardarEstadoSesion(activa: boolean): void {
   } catch (e) {
     console.error('Error guardando estado de sesión:', e);
   }
+}
+
+const STORAGE_KEY_CREDENCIALES_PIN = 'gestor_bienes_credenciales_pin_v1';
+const STORAGE_KEY_BLOQUEO_PIN = 'gestor_bienes_bloqueo_pin_v1';
+const PIN_INICIAL = '123456';
+const MAXIMO_INTENTOS_PIN = 5;
+const MINUTOS_BLOQUEO_PIN = 15;
+
+function generarSalt(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function calcularHash(valor: string, salt: string): Promise<string> {
+  const texto = `${salt}:${valor}`;
+  if (typeof crypto !== 'undefined' && crypto.subtle) {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texto));
+    return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+  let hashA = 0x811c9dc5;
+  let hashB = 0x01000193;
+  for (let i = 0; i < texto.length; i++) {
+    const code = texto.charCodeAt(i);
+    hashA = Math.imul(hashA ^ code, 0x01000193);
+    hashB = Math.imul(hashB + code, 0x85ebca6b);
+  }
+  return `${(hashA >>> 0).toString(16).padStart(8, '0')}${(hashB >>> 0)
+    .toString(16)
+    .padStart(8, '0')}`;
+}
+
+function generarCodigoRecuperacion(): string {
+  const alfabeto = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = new Uint8Array(12);
+  crypto.getRandomValues(bytes);
+  const caracteres = Array.from(bytes, (b) => alfabeto[b % alfabeto.length]);
+  return `GB-${caracteres.slice(0, 4).join('')}-${caracteres.slice(4, 8).join('')}-${caracteres
+    .slice(8, 12)
+    .join('')}`;
+}
+
+function normalizarCodigoRecuperacion(codigo: string): string {
+  return codigo.trim().toUpperCase().replace(/\s+/g, '');
+}
+
+export function hayCredencialesPIN(): boolean {
+  return localStorage.getItem(STORAGE_KEY_CREDENCIALES_PIN) !== null;
+}
+
+export async function crearCredencialesPIN(pin: string): Promise<string> {
+  if (!/^\d{6}$/.test(pin)) {
+    throw new Error('El PIN debe tener exactamente 6 dígitos.');
+  }
+  const codigoRecuperacion = generarCodigoRecuperacion();
+  const pinSalt = generarSalt();
+  const codigoRecuperacionSalt = generarSalt();
+  const credenciales: CredencialesPIN = {
+    pinHash: await calcularHash(pin, pinSalt),
+    pinSalt,
+    codigoRecuperacionHash: await calcularHash(
+      normalizarCodigoRecuperacion(codigoRecuperacion),
+      codigoRecuperacionSalt
+    ),
+    codigoRecuperacionSalt,
+    fechaCreacion: new Date().toISOString(),
+  };
+  localStorage.setItem(STORAGE_KEY_CREDENCIALES_PIN, JSON.stringify(credenciales));
+  reiniciarIntentosPIN();
+  return codigoRecuperacion;
+}
+
+export async function verificarPin(pin: string): Promise<boolean> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_CREDENCIALES_PIN);
+    if (!raw) {
+      return pin === PIN_INICIAL;
+    }
+    const credenciales: CredencialesPIN = JSON.parse(raw);
+    const hash = await calcularHash(pin, credenciales.pinSalt);
+    return hash === credenciales.pinHash;
+  } catch (e) {
+    console.error('Error verificando PIN:', e);
+    return false;
+  }
+}
+
+export async function verificarCodigoRecuperacion(codigo: string): Promise<boolean> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_CREDENCIALES_PIN);
+    if (!raw || !codigo.trim()) {
+      return false;
+    }
+    const credenciales: CredencialesPIN = JSON.parse(raw);
+    const hash = await calcularHash(
+      normalizarCodigoRecuperacion(codigo),
+      credenciales.codigoRecuperacionSalt
+    );
+    return hash === credenciales.codigoRecuperacionHash;
+  } catch (e) {
+    console.error('Error verificando código de recuperación:', e);
+    return false;
+  }
+}
+
+export function reiniciarIntentosPIN(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY_BLOQUEO_PIN);
+  } catch (e) {
+    console.error('Error reiniciando intentos de PIN:', e);
+  }
+}
+
+export function obtenerEstadoBloqueoPIN(): EstadoBloqueoPIN {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_BLOQUEO_PIN);
+    if (!raw) {
+      return { intentosFallidos: 0, bloqueadoHasta: null };
+    }
+    const estado: EstadoBloqueoPIN = JSON.parse(raw);
+    if (estado.bloqueadoHasta !== null && estado.bloqueadoHasta <= Date.now()) {
+      reiniciarIntentosPIN();
+      return { intentosFallidos: 0, bloqueadoHasta: null };
+    }
+    return {
+      intentosFallidos: Math.min(MAXIMO_INTENTOS_PIN, Math.max(0, estado.intentosFallidos || 0)),
+      bloqueadoHasta: estado.bloqueadoHasta ?? null,
+    };
+  } catch (e) {
+    console.error('Error obteniendo estado de bloqueo de PIN:', e);
+    return { intentosFallidos: 0, bloqueadoHasta: null };
+  }
+}
+
+export function registrarIntentoFallidoPIN(): EstadoBloqueoPIN {
+  const estadoActual = obtenerEstadoBloqueoPIN();
+  if (estadoActual.bloqueadoHasta !== null) {
+    return estadoActual;
+  }
+  const intentosFallidos = estadoActual.intentosFallidos + 1;
+  const bloqueadoHasta =
+    intentosFallidos >= MAXIMO_INTENTOS_PIN
+      ? Date.now() + MINUTOS_BLOQUEO_PIN * 60 * 1000
+      : null;
+  const nuevoEstado: EstadoBloqueoPIN = { intentosFallidos, bloqueadoHasta };
+  try {
+    localStorage.setItem(STORAGE_KEY_BLOQUEO_PIN, JSON.stringify(nuevoEstado));
+  } catch (e) {
+    console.error('Error registrando intento fallido de PIN:', e);
+  }
+  return nuevoEstado;
+}
+
+const CLAVES_RESPALDO = [
+  STORAGE_KEY_PROCESOS,
+  STORAGE_KEY_CASOS_FINALIZADOS,
+  STORAGE_KEY_LEYES_GRAL,
+  STORAGE_KEY_HONORARIOS_GRAL,
+  STORAGE_KEY_PERFIL_ABOGADO,
+  STORAGE_KEY_AJUSTES_APP,
+  STORAGE_KEY_CREDENCIALES_PIN,
+  STORAGE_KEY_BLOQUEO_PIN,
+];
+
+export function crearRespaldo(): string {
+  const datos: Record<string, string | null> = {};
+  for (const clave of CLAVES_RESPALDO) {
+    datos[clave] = localStorage.getItem(clave);
+  }
+  return JSON.stringify(
+    {
+      version: 1,
+      fechaExportacion: new Date().toISOString(),
+      datos,
+    },
+    null,
+    2
+  );
+}
+
+export function aplicarRespaldo(contenido: string): number {
+  const respaldo = JSON.parse(contenido);
+  if (!respaldo || respaldo.version !== 1 || typeof respaldo.datos !== 'object' || respaldo.datos === null) {
+    throw new Error('El archivo no es un respaldo válido de Gestor de Bienes.');
+  }
+  let clavesAplicadas = 0;
+  for (const clave of CLAVES_RESPALDO) {
+    if (!Object.prototype.hasOwnProperty.call(respaldo.datos, clave)) {
+      continue;
+    }
+    const valor = respaldo.datos[clave];
+    if (valor === null) {
+      localStorage.removeItem(clave);
+      clavesAplicadas += 1;
+    } else if (typeof valor === 'string') {
+      localStorage.setItem(clave, valor);
+      clavesAplicadas += 1;
+    }
+  }
+  return clavesAplicadas;
 }
 

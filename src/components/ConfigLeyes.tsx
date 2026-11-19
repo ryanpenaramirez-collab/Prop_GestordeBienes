@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, BookOpen, AlertCircle, Check, Search, X } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, BookOpen, AlertCircle, AlertTriangle, Check, RotateCcw, Search, X } from 'lucide-react';
 import { Ley, DestinatarioLey } from '../types';
+import { LEYES_PREDETERMINADAS } from '../utils/storage';
 import { InputPorcentaje } from './InputPorcentaje';
+
+type AccionPendienteLey =
+  | { tipo: 'eliminar' | 'modificar'; id: string; nombre: string; porcentaje?: number }
+  | { tipo: 'restablecer'; id?: undefined; nombre?: undefined; porcentaje?: undefined };
 
 interface ConfigLeyesProps {
   leyes: Ley[];
@@ -23,6 +28,7 @@ export const ConfigLeyes: React.FC<ConfigLeyesProps> = ({
   const [errorInput, setErrorInput] = useState<string | null>(null);
   const [guardadoFeedback, setGuardadoFeedback] = useState(false);
   const [busqueda, setBusqueda] = useState('');
+  const [accionPendiente, setAccionPendiente] = useState<AccionPendienteLey | null>(null);
 
   // Comparación profunda para detectar cambios pendientes
   const sonLeyesIdenticas = (a: Ley[], b: Ley[]): boolean => {
@@ -170,28 +176,73 @@ export const ConfigLeyes: React.FC<ConfigLeyesProps> = ({
     setErrorInput(null);
   };
 
-  const handleEliminarLey = (id: string) => {
-    const actualizada = listaLeyes.filter((l) => l.id !== id);
-    setListaLeyes(actualizada);
+  const handleSolicitarEliminar = (ley: Ley) => {
+    setAccionPendiente({ tipo: 'eliminar', id: ley.id, nombre: ley.nombre });
   };
 
   const handleModificarPorcentaje = (id: string, nuevoPct: number) => {
-    const actualizada = listaLeyes.map((l) =>
-      l.id === id ? { ...l, porcentaje: nuevoPct } : l
-    );
-    setListaLeyes(actualizada);
+    const ley = listaLeyes.find((l) => l.id === id);
+    if (!ley) return;
+    setAccionPendiente({ tipo: 'modificar', id, nombre: ley.nombre, porcentaje: nuevoPct });
+  };
+
+  const handleSolicitarRestablecer = () => {
+    setAccionPendiente({ tipo: 'restablecer' });
+  };
+
+  const confirmarAccionPendiente = () => {
+    if (!accionPendiente) return;
+    if (accionPendiente.tipo === 'eliminar' && accionPendiente.id) {
+      setListaLeyes((prev) => prev.filter((l) => l.id !== accionPendiente.id));
+    } else if (
+      accionPendiente.tipo === 'modificar' &&
+      accionPendiente.id &&
+      accionPendiente.porcentaje !== undefined
+    ) {
+      setListaLeyes((prev) =>
+        prev.map((l) =>
+          l.id === accionPendiente.id ? { ...l, porcentaje: accionPendiente.porcentaje ?? l.porcentaje } : l
+        )
+      );
+    } else if (accionPendiente.tipo === 'restablecer') {
+      const restauradas = LEYES_PREDETERMINADAS.map((l) => ({ ...l }));
+      setListaLeyes(restauradas);
+      setLeyesGuardadas(restauradas);
+      setBusqueda('');
+      onGuardarLeyes(restauradas);
+      setGuardadoFeedback(true);
+      setTimeout(() => setGuardadoFeedback(false), 2500);
+    }
+    setAccionPendiente(null);
+  };
+
+  const cancelarAccionPendiente = () => {
+    setAccionPendiente(null);
+  };
+
+  const mensajeConfirmacion = () => {
+    if (!accionPendiente) return '';
+    if (accionPendiente.tipo === 'eliminar') {
+      return `¿Eliminar del catálogo la ley "${accionPendiente.nombre}"?`;
+    }
+    if (accionPendiente.tipo === 'modificar') {
+      return `¿Modificar el porcentaje de "${accionPendiente.nombre}" a ${accionPendiente.porcentaje}%?`;
+    }
+    return '¿Restablecer el catálogo original de valores legales? Se perderán los cambios pendientes.';
   };
 
   const handleAplicarLeyes = () => {
     if (!hayCambiosPendientes) return;
     onGuardarLeyes(listaLeyes);
     setLeyesGuardadas(listaLeyes);
+    setAccionPendiente(null);
     mostrarFeedback();
   };
 
   const handleDescartarCambios = () => {
     setListaLeyes(leyesGuardadas);
     setErrorInput(null);
+    setAccionPendiente(null);
   };
 
   const mostrarFeedback = () => {
@@ -253,7 +304,7 @@ export const ConfigLeyes: React.FC<ConfigLeyesProps> = ({
                   type="text"
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
-                  placeholder="Ej: Cuarta de Libre Disposición"
+                  placeholder="Ej: Libre Disposición 50% (Ley 1934/2018)"
                   className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition shadow-2xs"
                 />
               </div>
@@ -286,7 +337,7 @@ export const ConfigLeyes: React.FC<ConfigLeyesProps> = ({
                     allowEmpty={true}
                     min={0}
                     max={100}
-                    placeholder="25.00"
+                    placeholder="50.00"
                     className="w-full bg-white border border-slate-300 rounded-lg pl-3 pr-6 py-1.5 text-xs text-slate-800 font-mono placeholder-slate-400 focus:outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition shadow-2xs text-right font-bold"
                   />
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-mono select-none">
@@ -377,6 +428,32 @@ export const ConfigLeyes: React.FC<ConfigLeyesProps> = ({
             </div>
           </div>
 
+          {accionPendiente && (
+            <div className="px-6 py-2.5 border-b border-amber-200 bg-amber-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
+              <div className="flex items-center gap-2 text-xs font-semibold text-amber-900">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{mensajeConfirmacion()}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={cancelarAccionPendiente}
+                  className="text-xs font-semibold text-slate-700 hover:text-slate-950 px-3 py-1.5 rounded-lg hover:bg-white transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmarAccionPendiente}
+                  className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Confirmar</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Contenedor de scroll interno para navegar las leyes expandido horizontalmente */}
           <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-100 overscroll-contain w-full">
             {leyesFiltradas.length === 0 ? (
@@ -431,7 +508,13 @@ export const ConfigLeyes: React.FC<ConfigLeyesProps> = ({
                       <div className="relative w-24">
                         <InputPorcentaje
                           id={`ley-pct-${ley.id}`}
-                          value={ley.porcentaje}
+                          value={
+                            accionPendiente?.tipo === 'modificar' &&
+                            accionPendiente.id === ley.id &&
+                            accionPendiente.porcentaje !== undefined
+                              ? accionPendiente.porcentaje
+                              : ley.porcentaje
+                          }
                           onChange={(val) => handleModificarPorcentaje(ley.id, val)}
                           min={0}
                           max={100}
@@ -447,7 +530,7 @@ export const ConfigLeyes: React.FC<ConfigLeyesProps> = ({
 
                     <button
                       type="button"
-                      onClick={() => handleEliminarLey(ley.id)}
+                      onClick={() => handleSolicitarEliminar(ley)}
                       className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
                       title="Eliminar del catálogo general"
                     >
@@ -478,6 +561,15 @@ export const ConfigLeyes: React.FC<ConfigLeyesProps> = ({
         </div>
 
         <div className="flex items-center gap-3 self-end sm:self-auto">
+          <button
+            type="button"
+            onClick={handleSolicitarRestablecer}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-950 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer border border-slate-300"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Restablecer valores legales</span>
+          </button>
+
           {hayCambiosPendientes && (
             <button
               type="button"
