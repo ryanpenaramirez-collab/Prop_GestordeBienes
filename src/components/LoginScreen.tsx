@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Lock, Mail, Eye, EyeOff, Sparkles, Info, Shield, KeyRound } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, Info, Shield, KeyRound } from 'lucide-react';
 import { PerfilAbogado } from '../types';
 import {
   hayCredencialesPIN,
@@ -137,19 +137,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       return;
     }
 
-    completarIngreso();
-  };
-
-  const handleAccesoRapido = async () => {
-    if (estaBloqueado) {
-      setErrorLogin('El acceso rápido está deshabilitado mientras la sesión esté bloqueada.');
-      return;
-    }
-    const pinValido = await verificarPin('123456');
-    if (!pinValido) {
-      setErrorLogin('El acceso rápido ya no está disponible. Ingrese su PIN de seguridad.');
-      return;
-    }
     completarIngreso();
   };
 
@@ -336,18 +323,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 <Lock className="w-3.5 h-3.5" />
                 <span>{modoRecuperacion ? 'Recuperar Acceso' : 'Iniciar Sesión'}</span>
               </button>
-
-              {!credencialesConfiguradas && (
-                <button
-                  type="button"
-                  id="btn-acceso-rapido"
-                  onClick={handleAccesoRapido}
-                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold py-2 px-4 rounded-lg text-xs transition-colors border border-slate-300 cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-slate-700" />
-                  <span>Acceso Rápido como {perfil.nombre || 'Abogado Titular'}</span>
-                </button>
-              )}
             </div>
           </form>
 
